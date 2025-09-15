@@ -1167,8 +1167,49 @@ class RenderEditor extends RenderEditableContainerBox
   /// Selects a line at the given position for iOS-style triple-tap behavior.
   /// This provides better UX by selecting the entire line instead of sentence boundaries.
   TextSelection selectSentenceAtPosition(TextPosition position) {
-    // Use line selection instead of sentence selection for better UX
-    return selectLineAtPosition(position);
+    // Try the visual line selection first, fallback to logical line selection
+    try {
+      final visualLine = selectLineAtPosition(position);
+      // If visual line selection seems reasonable (not too large), use it
+      if (visualLine.end - visualLine.start <
+          document.toPlainText().length * 0.8) {
+        return visualLine;
+      }
+    } catch (e) {
+      // If visual line selection fails, fallback to logical
+    }
+
+    // Fallback to logical line selection based on actual line breaks
+    return _selectLogicalLineAtPosition(position);
+  }
+
+  /// Selects a logical line based on actual line breaks in the text.
+  /// This provides more consistent behavior across different projects and layouts.
+  TextSelection _selectLogicalLineAtPosition(TextPosition position) {
+    final text = document.toPlainText();
+    if (text.isEmpty) {
+      return TextSelection.fromPosition(position);
+    }
+
+    // Find the start of the current line (look backwards for \n)
+    var lineStart = 0;
+    for (var i = position.offset - 1; i >= 0; i--) {
+      if (text[i] == '\n') {
+        lineStart = i + 1;
+        break;
+      }
+    }
+
+    // Find the end of the current line (look forwards for \n)
+    var lineEnd = text.length;
+    for (var i = position.offset; i < text.length; i++) {
+      if (text[i] == '\n') {
+        lineEnd = i;
+        break;
+      }
+    }
+
+    return TextSelection(baseOffset: lineStart, extentOffset: lineEnd);
   }
 
   /// Selects a paragraph at the given position for iOS-style quadruple-tap behavior.
