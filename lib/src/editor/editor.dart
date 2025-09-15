@@ -1165,19 +1165,8 @@ class RenderEditor extends RenderEditableContainerBox
   /// Selects a line at the given position for iOS-style triple-tap behavior.
   /// This provides better UX by selecting the entire line instead of sentence boundaries.
   TextSelection selectSentenceAtPosition(TextPosition position) {
-    // Try the visual line selection first, fallback to logical line selection
-    try {
-      final visualLine = selectLineAtPosition(position);
-      // If visual line selection seems reasonable (not too large), use it
-      if (visualLine.end - visualLine.start <
-          document.toPlainText().length * 0.8) {
-        return visualLine;
-      }
-    } catch (e) {
-      // If visual line selection fails, fallback to logical
-    }
-
-    // Fallback to logical line selection based on actual line breaks
+    // Always use logical line selection for consistent behavior
+    // This ensures the entire line is selected regardless of cursor position
     return _selectLogicalLineAtPosition(position);
   }
 
