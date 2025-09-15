@@ -414,7 +414,8 @@ class _QuillEditorSelectionGestureDetectorBuilder
       : super(delegate: _state, detectWordBoundary: _detectWordBoundary);
 
   final QuillEditorState _state;
-  final bool _detectWordBoundary;
+  // ignore: unused_field
+  final bool _detectWordBoundary; // Used by parent class, not in touch handling
 
   @override
   void onForcePressStart(ForcePressDetails details) {
@@ -537,17 +538,11 @@ class _QuillEditorSelectionGestureDetectorBuilder
               break;
             case PointerDeviceKind.touch:
             case PointerDeviceKind.unknown:
-              // On macOS/iOS/iPadOS a touch tap places the cursor at the edge
-              // of the word.
-              if (_detectWordBoundary) {
-                renderEditor!
-                  ..selectWordEdge(SelectionChangedCause.tap)
-                  ..onSelectionCompleted();
-              } else {
-                renderEditor!
-                  ..selectPosition(cause: SelectionChangedCause.tap)
-                  ..onSelectionCompleted();
-              }
+              // Allow precise cursor positioning for better UX
+              // Users can tap anywhere to place cursor at that exact position
+              renderEditor!
+                ..selectPosition(cause: SelectionChangedCause.tap)
+                ..onSelectionCompleted();
               break;
             case PointerDeviceKind.trackpad:
               // TODO: Handle this case.
