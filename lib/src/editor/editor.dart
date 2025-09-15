@@ -1071,6 +1071,22 @@ class RenderEditor extends RenderEditableContainerBox
     selectWordsInRange(_lastTapDownPosition!, null, cause);
   }
 
+  /// Selects a sentence at the last tap position for iOS-style triple-tap behavior.
+  void selectSentence(SelectionChangedCause cause) {
+    assert(_lastTapDownPosition != null);
+    final position = getPositionForOffset(_lastTapDownPosition!);
+    final sentence = selectSentenceAtPosition(position);
+    _handleSelectionChange(sentence, cause);
+  }
+
+  /// Selects a paragraph at the last tap position for iOS-style quadruple-tap behavior.
+  void selectParagraph(SelectionChangedCause cause) {
+    assert(_lastTapDownPosition != null);
+    final position = getPositionForOffset(_lastTapDownPosition!);
+    final paragraph = selectParagraphAtPosition(position);
+    _handleSelectionChange(paragraph, cause);
+  }
+
   @override
   void selectPosition({required SelectionChangedCause cause}) {
     selectPositionAt(from: _lastTapDownPosition!, cause: cause);
@@ -1079,11 +1095,62 @@ class RenderEditor extends RenderEditableContainerBox
   @override
   TextSelection selectWordAtPosition(TextPosition position) {
     final word = getWordBoundary(position);
-    // When long-pressing past the end of the text, we want a collapsed cursor.
-    if (position.offset >= word.end) {
+
+    // If we found a valid word, select it
+    if (word.start != word.end) {
+      return TextSelection(baseOffset: word.start, extentOffset: word.end);
+    }
+
+    // If no word found at this position, try to find the previous word
+    // This handles the case where user double-taps at the end of a word
+    final text = document.toPlainText();
+    if (text.isEmpty || position.offset == 0) {
       return TextSelection.fromPosition(position);
     }
-    return TextSelection(baseOffset: word.start, extentOffset: word.end);
+
+    // Look backwards to find the previous word
+    var wordStart = -1;
+    var wordEnd = -1;
+
+    // Find the end of the previous word
+    for (var i = position.offset - 1; i >= 0; i--) {
+      final char = text[i];
+      if (_isWordCharacter(char)) {
+        wordEnd = i + 1;
+        break;
+      }
+    }
+
+    // Find the start of the previous word
+    if (wordEnd != -1) {
+      for (var i = wordEnd - 1; i >= 0; i--) {
+        final char = text[i];
+        if (!_isWordCharacter(char)) {
+          wordStart = i + 1;
+          break;
+        }
+      }
+      if (wordStart == -1) {
+        wordStart = 0;
+      }
+    }
+
+    // If we found a previous word, select it
+    if (wordStart != -1 && wordEnd != -1 && wordStart < wordEnd) {
+      return TextSelection(baseOffset: wordStart, extentOffset: wordEnd);
+    }
+
+    // Fallback to collapsed cursor
+    return TextSelection.fromPosition(position);
+  }
+
+  /// Helper method to determine if a character is part of a word
+  bool _isWordCharacter(String char) {
+    return char.codeUnitAt(0) >= 65 && char.codeUnitAt(0) <= 90 || // A-Z
+        char.codeUnitAt(0) >= 97 && char.codeUnitAt(0) <= 122 || // a-z
+        char.codeUnitAt(0) >= 48 && char.codeUnitAt(0) <= 57 || // 0-9
+        char.codeUnitAt(0) >= 192 &&
+            char.codeUnitAt(0) <= 255; // Extended Latin
   }
 
   @override
@@ -1095,6 +1162,91 @@ class RenderEditor extends RenderEditableContainerBox
       return TextSelection.fromPosition(position);
     }
     return TextSelection(baseOffset: line.start, extentOffset: line.end);
+  }
+
+  /// Selects a sentence at the given position for iOS-style triple-tap behavior.
+  TextSelection selectSentenceAtPosition(TextPosition position) {
+    final text = document.toPlainText();
+    if (text.isEmpty) {
+      return TextSelection.fromPosition(position);
+    }
+
+    // Find sentence boundaries
+    var start = position.offset;
+    var end = position.offset;
+
+    // Look for sentence start (after punctuation or beginning of text)
+    for (var i = position.offset - 1; i >= 0; i--) {
+      final char = text[i];
+      if (char == '.' || char == '!' || char == '?' || char == '\n') {
+        start = i + 1;
+        // Skip whitespace after punctuation
+        while (start < text.length &&
+            (text[start] == ' ' || text[start] == '\t')) {
+          start++;
+        }
+        break;
+      }
+    }
+
+    // Look for sentence end (punctuation or end of text)
+    for (var i = position.offset; i < text.length; i++) {
+      final char = text[i];
+      if (char == '.' || char == '!' || char == '?' || char == '\n') {
+        end = i + 1;
+        break;
+      }
+    }
+
+    // If no sentence boundaries found, select the whole text
+    if (start == end) {
+      start = 0;
+      end = text.length;
+    }
+
+    return TextSelection(baseOffset: start, extentOffset: end);
+  }
+
+  /// Selects a paragraph at the given position for iOS-style quadruple-tap behavior.
+  TextSelection selectParagraphAtPosition(TextPosition position) {
+    final text = document.toPlainText();
+    if (text.isEmpty) {
+      return TextSelection.fromPosition(position);
+    }
+
+    // Find paragraph boundaries (double newlines or start/end of text)
+    var start = position.offset;
+    var end = position.offset;
+
+    // Look for paragraph start
+    for (var i = position.offset - 1; i >= 0; i--) {
+      if (text[i] == '\n') {
+        // Check if this is a double newline (paragraph break)
+        if (i > 0 && text[i - 1] == '\n') {
+          start = i + 1;
+          break;
+        }
+      }
+    }
+
+    // Look for paragraph end
+    for (var i = position.offset; i < text.length; i++) {
+      if (text[i] == '\n') {
+        // Check if this is a double newline (paragraph break)
+        if (i + 1 < text.length && text[i + 1] == '\n') {
+          end = i + 1;
+          break;
+        }
+      }
+    }
+
+    // If no paragraph boundaries found, select the whole text
+    if (start == end) {
+      start = 0;
+      end = text.length;
+    }
+
+    return TextSelection(baseOffset: start, extentOffset: end);
   }
 
   @override

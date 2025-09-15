@@ -302,6 +302,52 @@ class EditorTextSelectionGestureDetectorBuilder {
     }
   }
 
+  /// Handler for [EditorTextSelectionGestureDetector.onTripleTapDown].
+  ///
+  /// By default, it selects a sentence for iOS-style behavior if
+  /// selectionEnabled and shows toolbar if necessary.
+  ///
+  /// See also:
+  ///
+  ///  * [EditorTextSelectionGestureDetector.onTripleTapDown],
+  ///  which triggers this callback.
+  @protected
+  void onTripleTapDown(TapDownDetails details) {
+    if (delegate.selectionEnabled) {
+      renderEditor!.selectSentence(SelectionChangedCause.tap);
+      // allow the selection to get updated before trying to bring up
+      // toolbars.
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (checkSelectionToolbarShouldShow(isAdditionalAction: false)) {
+          editor!.showToolbar();
+        }
+      });
+    }
+  }
+
+  /// Handler for [EditorTextSelectionGestureDetector.onQuadrupleTapDown].
+  ///
+  /// By default, it selects a paragraph for iOS-style behavior if
+  /// selectionEnabled and shows toolbar if necessary.
+  ///
+  /// See also:
+  ///
+  ///  * [EditorTextSelectionGestureDetector.onQuadrupleTapDown],
+  ///  which triggers this callback.
+  @protected
+  void onQuadrupleTapDown(TapDownDetails details) {
+    if (delegate.selectionEnabled) {
+      renderEditor!.selectParagraph(SelectionChangedCause.tap);
+      // allow the selection to get updated before trying to bring up
+      // toolbars.
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (checkSelectionToolbarShouldShow(isAdditionalAction: false)) {
+          editor!.showToolbar();
+        }
+      });
+    }
+  }
+
   /// Handler for [EditorTextSelectionGestureDetector.onDragSelectionStart].
   ///
   /// By default, it selects a text position specified in [details].
@@ -376,6 +422,8 @@ class EditorTextSelectionGestureDetectorBuilder {
       onSingleLongTapMoveUpdate: onSingleLongTapMoveUpdate,
       onSingleLongTapEnd: onSingleLongTapEnd,
       onDoubleTapDown: onDoubleTapDown,
+      onTripleTapDown: onTripleTapDown,
+      onQuadrupleTapDown: onQuadrupleTapDown,
       onSecondarySingleTapUp: onSecondarySingleTapUp,
       onDragSelectionStart: onDragSelectionStart,
       onDragSelectionUpdate: onDragSelectionUpdate,
