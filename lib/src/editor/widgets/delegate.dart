@@ -304,7 +304,7 @@ class EditorTextSelectionGestureDetectorBuilder {
 
   /// Handler for [EditorTextSelectionGestureDetector.onTripleTapDown].
   ///
-  /// By default, it selects a sentence for iOS-style behavior if
+  /// By default, it selects a line for iOS-style behavior if
   /// selectionEnabled and shows toolbar if necessary.
   ///
   /// See also:

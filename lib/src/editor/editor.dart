@@ -1071,12 +1071,12 @@ class RenderEditor extends RenderEditableContainerBox
     selectWordsInRange(_lastTapDownPosition!, null, cause);
   }
 
-  /// Selects a sentence at the last tap position for iOS-style triple-tap behavior.
+  /// Selects a line at the last tap position for iOS-style triple-tap behavior.
   void selectSentence(SelectionChangedCause cause) {
     assert(_lastTapDownPosition != null);
     final position = getPositionForOffset(_lastTapDownPosition!);
-    final sentence = selectSentenceAtPosition(position);
-    _handleSelectionChange(sentence, cause);
+    final line = selectSentenceAtPosition(position);
+    _handleSelectionChange(line, cause);
   }
 
   /// Selects a paragraph at the last tap position for iOS-style quadruple-tap behavior.
@@ -1164,47 +1164,11 @@ class RenderEditor extends RenderEditableContainerBox
     return TextSelection(baseOffset: line.start, extentOffset: line.end);
   }
 
-  /// Selects a sentence at the given position for iOS-style triple-tap behavior.
+  /// Selects a line at the given position for iOS-style triple-tap behavior.
+  /// This provides better UX by selecting the entire line instead of sentence boundaries.
   TextSelection selectSentenceAtPosition(TextPosition position) {
-    final text = document.toPlainText();
-    if (text.isEmpty) {
-      return TextSelection.fromPosition(position);
-    }
-
-    // Find sentence boundaries
-    var start = position.offset;
-    var end = position.offset;
-
-    // Look for sentence start (after punctuation or beginning of text)
-    for (var i = position.offset - 1; i >= 0; i--) {
-      final char = text[i];
-      if (char == '.' || char == '!' || char == '?' || char == '\n') {
-        start = i + 1;
-        // Skip whitespace after punctuation
-        while (start < text.length &&
-            (text[start] == ' ' || text[start] == '\t')) {
-          start++;
-        }
-        break;
-      }
-    }
-
-    // Look for sentence end (punctuation or end of text)
-    for (var i = position.offset; i < text.length; i++) {
-      final char = text[i];
-      if (char == '.' || char == '!' || char == '?' || char == '\n') {
-        end = i + 1;
-        break;
-      }
-    }
-
-    // If no sentence boundaries found, select the whole text
-    if (start == end) {
-      start = 0;
-      end = text.length;
-    }
-
-    return TextSelection(baseOffset: start, extentOffset: end);
+    // Use line selection instead of sentence selection for better UX
+    return selectLineAtPosition(position);
   }
 
   /// Selects a paragraph at the given position for iOS-style quadruple-tap behavior.
