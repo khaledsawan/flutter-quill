@@ -1157,10 +1157,8 @@ class RenderEditor extends RenderEditableContainerBox
   TextSelection selectLineAtPosition(TextPosition position) {
     final line = getLineAtOffset(position);
 
-    // When long-pressing past the end of the text, we want a collapsed cursor.
-    if (position.offset >= line.end) {
-      return TextSelection.fromPosition(position);
-    }
+    // Always select the line, even if cursor is at the end
+    // This provides better UX for triple-tap line selection
     return TextSelection(baseOffset: line.start, extentOffset: line.end);
   }
 
